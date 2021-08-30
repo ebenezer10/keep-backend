@@ -7,7 +7,7 @@
 */
 
 const noteIsNotEmpty = function (note) {
-  if (note.title.trim() != '' && note.content.trim() != '') {
+  if (note.title.trim() !== '' && note.content.trim() !== '') {
     return true;
   }
   return false;

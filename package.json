@@ -19,5 +19,10 @@
     "passport": "^0.4.1",
     "passport-jwt": "^4.0.0",
     "passport-local-mongoose": "^6.1.0"
+  },
+  "devDependencies": {
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-plugin-import": "^2.24.2"
   }
 }
