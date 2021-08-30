@@ -16,6 +16,10 @@ git clone https://github.com/ebenezer10/keep-backend.git
 ```bash
 npm install
 ```
+- Recreate .env
+
+You must create a ```.env``` file at the root of the project based on the ```.env.example``` file.
+
 - Run tests
 - Launch server
 
