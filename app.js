@@ -1,4 +1,4 @@
-require('dotenv').config();
+require("dotenv").config();
 const createError = require("http-errors");
 const express = require("express");
 const path = require("path");
@@ -50,25 +50,18 @@ app.post("/newNote", (req, res) => {
   if (Utility.noteIsNotEmpty(note)) {
     note.save(function (err) {
       if (err) throw err;
-      return res
-        .status(201)
-        .json({ status: 0, message: "Note added successfully", note });
+      res.status(201).json({ status: 0, message: "Note added successfully", note });
     });
-  } else {
-    return res.status(400).json({ status: -1, message: "Note may be empty" });
   }
+  res.status(400).json({ status: -1, message: "Note may be empty" });
 });
 
 app.get("/getNotes", (req, res) => {
   NoteModel.find({}).then((value) => {
     if (value) {
-      return res
-        .status(200)
-        .json({ status: 0, message: "All notes retrieve", notes: value });
+      res.status(200).json({ status: 0, message: "All notes retrieve", notes: value });
     }
-    return res
-      .status(400)
-      .json({ status: -1, message: "Error retrieving notes" });
+    res.status(400).json({ status: -1, message: "Error retrieving notes" });
   });
 });
 
@@ -79,7 +72,7 @@ app.patch("/editNote", (req, res) => {
       if (err) throw err;
       NoteModel.findOne({ _id: note._id }, function (err, obj) {
         if (err) throw err;
-        return res.status(201).json({
+        res.status(201).json({
           status: 0,
           message: "Note edited successfully",
           note: obj,
@@ -87,7 +80,7 @@ app.patch("/editNote", (req, res) => {
       });
     });
   } else {
-    return res.status(400).json({ status: -1, message: "Note may be empty" });
+    res.status(400).json({ status: -1, message: "Note may be empty" });
   }
 });
 
@@ -97,12 +90,10 @@ app.delete("/deleteNote", (req, res) => {
   if (Utility.noteIsNotEmpty(note)) {
     note.delete(function (err) {
       if (err) throw err;
-      return res
-        .status(204)
-        .json({ status: 0, message: "Note deleted successfully" });
+      res.status(204).json({ status: 0, message: "Note deleted successfully" });
     });
   } else {
-    return res.status(400).json({ status: -1, message: "Note may be empty" });
+    res.status(400).json({ status: -1, message: "Note may be empty" });
   }
 });
 
