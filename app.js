@@ -6,6 +6,28 @@ const path = require('path');
 const cookieParser = require('cookie-parser');
 const logger = require('morgan');
 const cors = require('cors');
+const passport = require('passport');
+
+const jwt = require('jsonwebtoken');
+const passportJWT = require('passport-jwt');
+const UserModel = require('./models/user');
+
+const { ExtractJwt } = passportJWT;
+const JwtStrategy = passportJWT.Strategy;
+const jwtOptions = {};
+
+jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
+jwtOptions.secretOrKey = process.env.APP_SECRET;
+const strategy = new JwtStrategy(jwtOptions, ((jwtPayload, next) => {
+  UserModel.findById(jwtPayload.id, (error, user) => {
+    if (error) throw error;
+    if (user) {
+      next(null, user);
+    } else {
+      next(null, false);
+    }
+  });
+}));
 
 const Utility = require('./modules/utility');
 const indexRouter = require('./routes/index');
@@ -24,7 +46,14 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.post('/newNote', (req, res) => {
+passport.use(strategy);
+app.use(passport.initialize());
+
+app.get('/secret', passport.authenticate('jwt', { session: false }), (req, res) => {
+  res.json('Success! You can not see this without a token');
+});
+
+app.post('/newNote', passport.authenticate('jwt', { session: false }), (req, res) => {
   const note = new NoteModel(req.body);
   if (Utility.noteIsNotEmpty(note)) {
     note.save((err) => {
@@ -36,7 +65,7 @@ app.post('/newNote', (req, res) => {
   }
 });
 
-app.get('/getNotes', (req, res) => {
+app.get('/getNotes', passport.authenticate('jwt', { session: false }), (req, res) => {
   NoteModel.find({}).then((value) => {
     if (value) {
       res.status(200).json({ status: 0, message: 'All notes retrieve', notes: value });
@@ -46,7 +75,7 @@ app.get('/getNotes', (req, res) => {
   });
 });
 
-app.patch('/editNote', (req, res) => {
+app.patch('/editNote', passport.authenticate('jwt', { session: false }), (req, res) => {
   const note = new NoteModel(req.body);
   if (Utility.noteIsNotEmpty(note)) {
     NoteModel.updateOne({ _id: note._id }, note, (err) => {
@@ -65,7 +94,7 @@ app.patch('/editNote', (req, res) => {
   }
 });
 
-app.delete('/deleteNote', (req, res) => {
+app.delete('/deleteNote', passport.authenticate('jwt', { session: false }), (req, res) => {
   const note = new NoteModel(req.body);
   if (Utility.noteIsNotEmpty(note)) {
     note.delete((err) => {
@@ -74,6 +103,26 @@ app.delete('/deleteNote', (req, res) => {
     });
   } else {
     res.status(400).json({ status: -1, message: 'Note may be empty' });
+  }
+});
+
+app.post('/login', (req, res) => {
+  if (req.body.username && req.body.password) {
+    const { username } = req.body;
+    const { password } = req.body;
+
+    const authenticate = UserModel.authenticate();
+    authenticate(username, password, (error, user) => {
+      if (error) throw error;
+      if (!user) res.status(401).json({ message: 'no such user found' });
+      else {
+        const payload = { id: user.id };
+        const token = jwt.sign(payload, jwtOptions.secretOrKey);
+        res.json({ message: 'ok', token, user });
+      }
+    });
+  } else {
+    res.status(400).json({ message: 'Bad request. Request body must not be empty.' });
   }
 });
 
