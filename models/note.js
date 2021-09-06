@@ -5,6 +5,7 @@ const { Schema } = consts.mongoose;
 const note = new Schema({
   title: String,
   content: String,
+  color: String,
   createdDate: Number,
   editedDate: Number,
 });
