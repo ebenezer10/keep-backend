@@ -18,7 +18,7 @@ const jwtOptions = {};
 
 jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 jwtOptions.secretOrKey = process.env.APP_SECRET;
-const strategy = new JwtStrategy(jwtOptions, ((jwtPayload, next) => {
+const strategy = new JwtStrategy(jwtOptions, (jwtPayload, next) => {
   UserModel.findById(jwtPayload.id, (error, user) => {
     if (error) throw error;
     if (user) {
@@ -27,7 +27,7 @@ const strategy = new JwtStrategy(jwtOptions, ((jwtPayload, next) => {
       next(null, false);
     }
   });
-}));
+});
 
 const Utility = require('./modules/utility');
 const indexRouter = require('./routes/index');
@@ -65,14 +65,26 @@ app.post('/newNote', passport.authenticate('jwt', { session: false }), (req, res
   }
 });
 
-app.get('/getNotes', passport.authenticate('jwt', { session: false }), (req, res) => {
-  NoteModel.find({}).then((value) => {
-    if (value) {
-      res.status(200).json({ status: 0, message: 'All notes retrieve', notes: value });
-    } else {
-      res.status(400).json({ status: -1, message: 'Error retrieving notes' });
-    }
-  });
+app.get('/getNotes', passport.authenticate('jwt', { session: false }), async (req, res) => {
+  jwt.verify(
+    req.headers.authorization.replace('Bearer ', ''),
+    process.env.APP_SECRET,
+    (err, decoded) => {
+      if (err) throw err;
+      if (decoded) {
+        console.log(decoded);
+        NoteModel.find({}).then((value) => {
+          if (value) {
+            res.status(200).json({ status: 0, message: 'All notes retrieve', notes: value });
+          } else {
+            res.status(400).json({ status: -1, message: 'Error retrieving notes' });
+          }
+        });
+      } else {
+        res.status(402).json({ status: -1, message: 'Expired Token' });
+      }
+    },
+  );
 });
 
 app.patch('/editNote', passport.authenticate('jwt', { session: false }), (req, res) => {
@@ -114,11 +126,13 @@ app.post('/login', (req, res) => {
     const authenticate = UserModel.authenticate();
     authenticate(username, password, (error, user) => {
       if (error) throw error;
-      if (!user) res.status(401).json({ message: 'no such user found' });
+      if (!user) res.status(401).json({ message: 'No such user found' });
       else {
         const payload = { id: user.id };
-        const token = jwt.sign(payload, jwtOptions.secretOrKey);
-        res.json({ message: 'ok', token, user });
+        const token = jwt.sign(payload, jwtOptions.secretOrKey, {
+          expiresIn: process.env.JWT_EXPIRES,
+        });
+        res.status(200).json({ message: 'User authentication successful', token, user });
       }
     });
   } else {
