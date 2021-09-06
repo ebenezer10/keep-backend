@@ -7,6 +7,7 @@ const note = new Schema({
   content: String,
   createdDate: Number,
   editedDate: Number,
+  userId: String,
 });
 
 module.exports = consts.mongoose.model('NoteModel', note, 'notes');
