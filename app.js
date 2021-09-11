@@ -72,8 +72,7 @@ app.get('/getNotes', passport.authenticate('jwt', { session: false }), async (re
     (err, decoded) => {
       if (err) throw err;
       if (decoded) {
-        console.log(decoded);
-        NoteModel.find({}).then((value) => {
+        NoteModel.find({ userId: req.query.userId }).then((value) => {
           if (value) {
             res.status(200).json({ status: 0, message: 'All notes retrieve', notes: value });
           } else {
