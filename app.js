@@ -183,15 +183,18 @@ app.post('/login', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-  if (Utility.validateUser(req.body) === true) {
-    if (await Utility.checkUserUnicity(req.body) === true) {
+  const result = Utility.validateUser(req.body);
+  if (result === true) {
+    if ((await Utility.checkUserUnicity(req.body)) === true) {
       const { firstName } = req.body;
       const { lastName } = req.body;
       const { email } = req.body;
       const password = req.body.password.first;
 
       const user = new UserModel({
-        firstName, lastName, username: email,
+        firstName,
+        lastName,
+        username: email,
       });
 
       UserModel.register(user, password, (err) => {
@@ -202,7 +205,7 @@ app.post('/register', async (req, res) => {
       res.status(400).json({ message: 'User already exist' });
     }
   } else {
-    res.status(400).json({ message: 'Could not validate user' });
+    res.status(400).json({ message: 'Could not validate user', errors: result });
   }
 });
 
