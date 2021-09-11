@@ -182,6 +182,21 @@ app.post('/login', (req, res) => {
   }
 });
 
+app.post('/register', async (req, res) => {
+  if (Utility.validateUser(req.body) === true) {
+    // const { username } = req.body;
+    // const { password } = req.body;
+
+    if (await Utility.checkUserUnicity(req.body) === true) {
+      res.status(200).json({ message: 'ok' });
+    } else {
+      res.status(400).json({ message: 'User already exist' });
+    }
+  } else {
+    res.status(400).json({ message: 'Could not validate user' });
+  }
+});
+
 app.use('/', indexRouter);
 
 app.get('/logout', (req, res) => {
