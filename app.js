@@ -20,7 +20,7 @@ jwtOptions.jwtFromRequest = ExtractJwt.fromAuthHeaderAsBearerToken();
 jwtOptions.secretOrKey = process.env.APP_SECRET;
 const strategy = new JwtStrategy(jwtOptions, (jwtPayload, next) => {
   UserModel.findById(jwtPayload.id, (error, user) => {
-    if (error) throw error;
+    if (error) console.log(error);
     if (user) {
       next(null, user);
     } else {
@@ -57,8 +57,15 @@ app.post('/newNote', passport.authenticate('jwt', { session: false }), (req, res
   const note = new NoteModel(req.body);
   if (Utility.noteIsNotEmpty(note)) {
     note.save((err) => {
-      if (err) throw err;
-      res.status(201).json({ status: 0, message: 'Note added successfully', note });
+      if (err) {
+        res.status(500).json({
+          status: 0,
+          message: 'Internall server error',
+          error: err,
+        });
+      } else {
+        res.status(201).json({ status: 0, message: 'Note added successfully', note });
+      }
     });
   } else {
     res.status(400).json({ status: -1, message: 'Note may be empty' });
@@ -70,12 +77,20 @@ app.get('/getNotes', passport.authenticate('jwt', { session: false }), async (re
     req.headers.authorization.replace('Bearer ', ''),
     process.env.APP_SECRET,
     (err, decoded) => {
-      if (err) throw err;
-      if (decoded) {
-        console.log(decoded);
-        NoteModel.find({}).then((value) => {
+      if (err) {
+        res.status(500).json({
+          status: 0,
+          message: 'Internall server error',
+          error: err,
+        });
+      } else if (decoded) {
+        NoteModel.find({ userId: req.query.userId }).then((value) => {
           if (value) {
-            res.status(200).json({ status: 0, message: 'All notes retrieve', notes: value });
+            res.status(200).json({
+              status: 0,
+              message: 'All notes retrieve',
+              notes: value,
+            });
           } else {
             res.status(400).json({ status: -1, message: 'Error retrieving notes' });
           }
@@ -91,15 +106,29 @@ app.patch('/editNote', passport.authenticate('jwt', { session: false }), (req, r
   const note = new NoteModel(req.body);
   if (Utility.noteIsNotEmpty(note)) {
     NoteModel.updateOne({ _id: note._id }, note, (err) => {
-      if (err) throw err;
-      NoteModel.findOne({ _id: note._id }, (error, obj) => {
-        if (err) throw error;
-        res.status(201).json({
+      if (err) {
+        res.status(500).json({
           status: 0,
-          message: 'Note edited successfully',
-          note: obj,
+          message: 'Internall server error',
+          error: err,
         });
-      });
+      } else {
+        NoteModel.findOne({ _id: note._id }, (error, obj) => {
+          if (err) {
+            res.status(500).json({
+              status: 0,
+              message: 'Internall server error',
+              error,
+            });
+          } else {
+            res.status(201).json({
+              status: 0,
+              message: 'Note edited successfully',
+              note: obj,
+            });
+          }
+        });
+      }
     });
   } else {
     res.status(400).json({ status: -1, message: 'Note may be empty' });
@@ -110,8 +139,15 @@ app.delete('/deleteNote', passport.authenticate('jwt', { session: false }), (req
   const note = new NoteModel(req.body);
   if (Utility.noteIsNotEmpty(note)) {
     note.delete((err) => {
-      if (err) throw err;
-      res.status(204).json({ status: 0, message: 'Note deleted successfully' });
+      if (err) {
+        res.status(500).json({
+          status: 0,
+          message: 'Internall server error',
+          error: err,
+        });
+      } else {
+        res.status(204).json({ status: 0, message: 'Note deleted successfully' });
+      }
     });
   } else {
     res.status(400).json({ status: -1, message: 'Note may be empty' });
@@ -125,14 +161,20 @@ app.post('/login', (req, res) => {
 
     const authenticate = UserModel.authenticate();
     authenticate(username, password, (error, user) => {
-      if (error) throw error;
-      if (!user) res.status(401).json({ message: 'No such user found' });
-      else {
+      if (error) {
+        res.status(500).json({
+          status: 0,
+          message: 'Internall server error',
+          error,
+        });
+      } else if (user) {
         const payload = { id: user.id };
         const token = jwt.sign(payload, jwtOptions.secretOrKey, {
           expiresIn: process.env.JWT_EXPIRES,
         });
         res.status(200).json({ message: 'User authentication successful', token, user });
+      } else {
+        res.status(401).json({ message: 'No such user found' });
       }
     });
   } else {
