@@ -48,6 +48,7 @@ const validateUser = (user) => {
   return true;
 };
 
-const checkUserUnicity = async (user) => !await UserModel.countDocuments({ email: user.email }) > 0;
+// eslint-disable-next-line max-len
+const checkUserUnicity = async (user) => !await UserModel.countDocuments({ username: user.email }) > 0;
 
 module.exports = { noteIsNotEmpty, validateUser, checkUserUnicity };
